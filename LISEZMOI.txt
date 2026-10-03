@@ -1,0 +1,8 @@
+Application R2.0 — page de lancement (icône sur l'écran d'accueil)
+
+Fichiers à publier tels quels à la racine du site :
+  index.html, manifest.webmanifest, sw.js, CNAME,
+  icon-192.png, icon-512.png, icon-maskable-512.png, apple-touch-icon.png, favicon.png
+
+Adresse prévue : https://app.supplier20.com (fichier CNAME).
+La page ouvre l'appli R2.0 (Google Apps Script) en plein écran.

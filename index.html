@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Application R2.0</title>
+<meta name="description" content="L'espace membre Reseller 2.0.">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="R2.0">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+  :root { --fond: #000; --texte: #fff; --gris: #A8AEB6; }
+  html, body { margin: 0; height: 100%; background: var(--fond); color: var(--texte);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  #appli { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; display: block; background: #E8EAED;
+    padding-top: env(safe-area-inset-top); box-sizing: border-box; }
+  #accueil { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+    transition: opacity .35s; z-index: 2; background: var(--fond); }
+  #accueil img { width: 112px; height: 112px; border-radius: 26px; }
+  #accueil p { margin: 0; color: var(--gris); font-size: 14px; }
+  #accueil.cache { opacity: 0; pointer-events: none; }
+  #installer { position: fixed; left: 16px; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 3; display: none;
+    background: #fff; color: #000; border-radius: 14px; padding: 12px 14px; font-size: 14px; box-shadow: 0 6px 24px rgba(0,0,0,.35); }
+  #installer b { display: block; margin-bottom: 2px; }
+  #installer button { margin-top: 8px; background: #000; color: #fff; border: 0; border-radius: 9px; padding: 9px 14px; font-weight: 700; font-size: 14px; }
+  #installer .fermer { background: none; color: #5B626B; margin-left: 6px; }
+</style>
+</head>
+<body>
+<div id="accueil"><img src="icon-512.png" alt="R2.0"><p>Application R2.0</p></div>
+<iframe id="appli" title="Application R2.0" allow="clipboard-write"
+  src="https://script.google.com/macros/s/AKfycbxEvrnogKnXWHxYHtcztRaZu5ga4IlNTbnybV5KPPo1Z6rC2u6Ea2Ju1DdtysB3hE3u/exec?k=e3016f812315463cb83e"></iframe>
+<div id="installer" role="dialog" aria-live="polite"></div>
+<script>
+  // Écran de démarrage le temps que l'appli charge.
+  var appli = document.getElementById('appli'), accueil = document.getElementById('accueil');
+  appli.addEventListener('load', function () { accueil.classList.add('cache'); });
+  setTimeout(function () { accueil.classList.add('cache'); }, 6000);
+
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
+
+  // Proposition d'installation (une fois), si l'appli n'est pas déjà ouverte depuis l'écran d'accueil.
+  var autonome = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  var dejaVu = false;
+  try { dejaVu = localStorage.getItem('r2_install_vu') === '1'; } catch (e) { /* stockage indisponible */ }
+  var boite = document.getElementById('installer');
+  function montrer(html) {
+    boite.innerHTML = html + ' <button type="button" class="fermer">Plus tard</button>';
+    boite.style.display = 'block';
+    boite.querySelector('.fermer').onclick = function () { boite.style.display = 'none'; try { localStorage.setItem('r2_install_vu', '1'); } catch (e) {} };
+  }
+  if (!autonome && !dejaVu) {
+    var ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    if (ios) setTimeout(function () { montrer('<b>Installe l\'appli R2.0</b>Touche le bouton Partager <span aria-hidden="true">⬆︎</span> puis « Sur l\'écran d\'accueil ».'); }, 2500);
+    window.addEventListener('beforeinstallprompt', function (ev) {
+      ev.preventDefault();
+      montrer('<b>Installe l\'appli R2.0</b>Ajoute-la à ton écran d\'accueil pour l\'ouvrir en un clic. <br><button type="button" class="ok">Installer</button>');
+      boite.querySelector('.ok').onclick = function () { ev.prompt(); boite.style.display = 'none'; };
+    });
+  }
+</script>
+</body>
+</html>
