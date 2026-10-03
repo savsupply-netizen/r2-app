@@ -13,17 +13,59 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
 <style>
-  :root { --fond: #000; --texte: #fff; --gris: #A8AEB6; }
+  :root { --fond: #000; --texte: #fff; --gris: #8A9099; --rouge: #D7141E; }
   html, body { margin: 0; height: 100%; background: var(--fond); color: var(--texte);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    font-family: "Archivo", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
   #appli { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; display: block; background: #E8EAED;
     padding-top: env(safe-area-inset-top); box-sizing: border-box; }
-  #accueil { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
-    transition: opacity .35s; z-index: 2; background: var(--fond); }
-  #accueil img { width: 112px; height: 112px; border-radius: 26px; }
-  #accueil p { margin: 0; color: var(--gris); font-size: 14px; }
-  #accueil.cache { opacity: 0; pointer-events: none; }
+
+  /* ---- Écran de démarrage ---- */
+  #accueil { position: fixed; inset: 0; z-index: 2; overflow: hidden; background: var(--fond);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    transition: opacity .5s ease, transform .5s ease; }
+  #accueil.cache { opacity: 0; transform: scale(1.04); pointer-events: none; }
+  /* lueur rouge qui respire derrière le logo */
+  #accueil::before { content: ""; position: absolute; width: 140vmax; height: 140vmax; left: 50%; top: 46%;
+    transform: translate(-50%, -50%); background: radial-gradient(circle, rgba(215,20,30,.32) 0, rgba(215,20,30,.08) 18%, transparent 38%);
+    animation: respire 2.8s ease-in-out infinite; }
+  /* grandes bandes diagonales en filigrane, comme le logo */
+  #accueil::after { content: ""; position: absolute; inset: -20%; opacity: .07;
+    background: repeating-linear-gradient(-58deg, transparent 0 46px, #fff 46px 52px, transparent 52px 120px);
+    animation: glisse 9s linear infinite; }
+  .scene { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; }
+  .logo { position: relative; width: 150px; height: 150px; display: grid; place-items: center; }
+  .logo img { width: 118px; height: 118px; border-radius: 50%; animation: entree .8s cubic-bezier(.2,1.4,.4,1) both; }
+  .anneau { position: absolute; inset: 0; border-radius: 50%;
+    background: conic-gradient(from 0deg, transparent 0 62%, rgba(215,20,30,.15) 70%, var(--rouge) 92%, #fff 100%);
+    -webkit-mask: radial-gradient(circle, transparent 69px, #000 70px 74px, transparent 75px);
+            mask: radial-gradient(circle, transparent 69px, #000 70px 74px, transparent 75px);
+    animation: tourne 1.1s linear infinite; }
+  .marque { margin-top: 26px; font-stretch: 75%; font-weight: 900; font-size: 30px; letter-spacing: .5px; text-transform: uppercase;
+    animation: monte .7s .25s ease-out both; }
+  .marque span { color: var(--rouge); }
+  .phrase { margin-top: 10px; height: 18px; font-size: 13.5px; color: var(--gris); letter-spacing: .2px; transition: opacity .3s;
+    animation: monte .7s .4s ease-out both; }
+  .barre { margin-top: 22px; width: 160px; height: 3px; border-radius: 3px; background: #1C1F23; overflow: hidden;
+    animation: monte .7s .5s ease-out both; }
+  .barre i { display: block; width: 40%; height: 100%; border-radius: 3px; background: linear-gradient(90deg, transparent, var(--rouge), #fff);
+    animation: balaie 1.3s ease-in-out infinite; }
+  .bas { position: absolute; z-index: 1; bottom: calc(26px + env(safe-area-inset-bottom)); font-size: 11px; letter-spacing: 3px;
+    text-transform: uppercase; color: #4A4F56; font-weight: 700; }
+  @keyframes entree { from { opacity: 0; transform: scale(.6) rotate(-12deg); } to { opacity: 1; transform: none; } }
+  @keyframes tourne { to { transform: rotate(360deg); } }
+  @keyframes respire { 0%, 100% { opacity: .75; transform: translate(-50%, -50%) scale(.94); } 50% { opacity: 1; transform: translate(-50%, -50%) scale(1.04); } }
+  @keyframes glisse { to { transform: translateX(120px); } }
+  @keyframes monte { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  @keyframes balaie { from { transform: translateX(-110%); } to { transform: translateX(260%); } }
+  @media (prefers-reduced-motion: reduce) {
+    #accueil::before, #accueil::after, .anneau, .barre i { animation: none; }
+    .logo img, .marque, .phrase, .barre { animation: none; }
+  }
+
   #installer { position: fixed; left: 16px; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 3; display: none;
     background: #fff; color: #000; border-radius: 14px; padding: 12px 14px; font-size: 14px; box-shadow: 0 6px 24px rgba(0,0,0,.35); }
   #installer b { display: block; margin-bottom: 2px; }
@@ -32,15 +74,32 @@
 </style>
 </head>
 <body>
-<div id="accueil"><img src="icon-512.png" alt="R2.0"><p>Application R2.0</p></div>
+<div id="accueil" role="status" aria-label="Chargement de l'application R2.0">
+  <div class="scene">
+    <div class="logo"><div class="anneau"></div><img src="icon-512.png" alt="R2.0"></div>
+    <div class="marque">Application <span>R2.0</span></div>
+    <div class="phrase" id="phrase">On prépare ton espace…</div>
+    <div class="barre"><i></i></div>
+  </div>
+  <div class="bas">Reseller 2.0</div>
+</div>
 <iframe id="appli" title="Application R2.0" allow="clipboard-write"
   src="https://script.google.com/macros/s/AKfycbxEvrnogKnXWHxYHtcztRaZu5ga4IlNTbnybV5KPPo1Z6rC2u6Ea2Ju1DdtysB3hE3u/exec?k=e3016f812315463cb83e"></iframe>
 <div id="installer" role="dialog" aria-live="polite"></div>
 <script>
   // Écran de démarrage le temps que l'appli charge.
   var appli = document.getElementById('appli'), accueil = document.getElementById('accueil');
-  appli.addEventListener('load', function () { accueil.classList.add('cache'); });
-  setTimeout(function () { accueil.classList.add('cache'); }, 6000);
+  // Reste au moins 1,4 s (le temps de l'animation), puis disparaît dès que l'appli est chargée (8 s maximum).
+  var debut = Date.now();
+  function cacher() { setTimeout(function () { accueil.classList.add('cache'); clearInterval(tour); }, Math.max(0, 1400 - (Date.now() - debut))); }
+  appli.addEventListener('load', cacher);
+  setTimeout(cacher, 8000);
+  var phrases = ['On prépare ton espace…', 'On récupère tes commandes…', 'On regarde ce qui part en ce moment…', 'Presque prêt…'];
+  var n = 0, ph = document.getElementById('phrase');
+  var tour = setInterval(function () {
+    n = Math.min(n + 1, phrases.length - 1); ph.style.opacity = 0;
+    setTimeout(function () { ph.textContent = phrases[n]; ph.style.opacity = 1; }, 300);
+  }, 1500);
 
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
 
