@@ -71,7 +71,20 @@
   #installer b { display: block; margin-bottom: 2px; }
   #installer button { margin-top: 8px; background: #000; color: #fff; border: 0; border-radius: 9px; padding: 9px 14px; font-weight: 700; font-size: 14px; }
   #installer .fermer { background: none; color: #5B626B; margin-left: 6px; }
+
+  /* ---- Autorisation des notifications ---- */
+  #notif-fond { position: fixed; inset: 0; z-index: 5; background: rgba(0,0,0,.55); display: none; align-items: flex-end; justify-content: center; }
+  #notif-fond.visible { display: flex; }
+  #notif-boite { width: 100%; max-width: 480px; background: #fff; color: #000; border-radius: 20px 20px 0 0; padding: 22px 20px calc(20px + env(safe-area-inset-bottom));
+    box-shadow: 0 -10px 40px rgba(0,0,0,.35); text-align: center; animation: monte .3s ease-out both; }
+  #notif-boite .cloche { font-size: 40px; }
+  #notif-boite h2 { margin: 6px 0 6px; font-stretch: 75%; font-weight: 900; font-size: 26px; }
+  #notif-boite p { margin: 0 0 16px; color: #5B626B; font-size: 14.5px; line-height: 1.45; }
+  #notif-boite button { display: block; width: 100%; border: 0; border-radius: 12px; padding: 14px; font-weight: 800; font-size: 16px; font-family: inherit; cursor: pointer; }
+  #notif-ok { background: #D7141E; color: #fff; box-shadow: 0 8px 20px rgba(215,20,30,.35); }
+  #notif-non { background: none; color: #5B626B; margin-top: 6px; }
 </style>
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 </head>
 <body>
 <div id="accueil" role="status" aria-label="Chargement de l'application R2.0">
@@ -86,6 +99,15 @@
 <iframe id="appli" title="Application R2.0" allow="clipboard-write"
   src="https://script.google.com/macros/s/AKfycbxEvrnogKnXWHxYHtcztRaZu5ga4IlNTbnybV5KPPo1Z6rC2u6Ea2Ju1DdtysB3hE3u/exec?k=e3016f812315463cb83e"></iframe>
 <div id="installer" role="dialog" aria-live="polite"></div>
+<div id="notif-fond" role="dialog" aria-modal="true" aria-labelledby="notif-titre">
+  <div id="notif-boite">
+    <div class="cloche" aria-hidden="true">🔔</div>
+    <h2 id="notif-titre">Activer les notifications</h2>
+    <p>R2.0 te prévient quand le SAV te répond, quand ton colis est prêt ou expédié, et à l'heure de ta routine. Tu choisis quoi recevoir dans l'appli, et tu peux tout couper quand tu veux.</p>
+    <button type="button" id="notif-ok">Autoriser</button>
+    <button type="button" id="notif-non">Pas maintenant</button>
+  </div>
+</div>
 <script>
   // Écran de démarrage le temps que l'appli charge.
   var appli = document.getElementById('appli'), accueil = document.getElementById('accueil');
@@ -101,7 +123,54 @@
     setTimeout(function () { ph.textContent = phrases[n]; ph.style.opacity = 1; }, 300);
   }, 1500);
 
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
+  // ---- Notifications (OneSignal). Le service worker sw.js est enregistré par OneSignal. ----
+  var ONESIGNAL_APP_ID = '87f5d2a8-fcb3-4048-ad7c-f6d993d9019e';
+  var OS = null, idMembre = '', sourceAppli = null, origineAppli = '*';
+  var aller = (location.hash || '').replace('#', '');
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function (OneSignal) {
+    try {
+      await OneSignal.init({ appId: ONESIGNAL_APP_ID, serviceWorkerPath: 'r2-app/sw.js', serviceWorkerParam: { scope: '/r2-app/' },
+        notifyButton: { enable: false }, promptOptions: { autoPrompt: false } });
+      OS = OneSignal;
+      OneSignal.Notifications.addEventListener('permissionChange', function () { envoyerEtat(); });
+      OneSignal.User.PushSubscription.addEventListener('change', function () { envoyerEtat(); });
+      if (idMembre) OneSignal.login(idMembre).catch(function () {});
+      envoyerEtat();
+    } catch (e) { /* notifications indisponibles */ }
+  });
+  // Sans OneSignal (bloqué, hors ligne) : le service worker reste enregistré pour l'installation.
+  setTimeout(function () { if (!OS && 'serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {}); }, 10000);
+  var ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  function etat() {
+    return { r2: 'etat', support: 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window, ios: ios,
+      standalone: !!(window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone),
+      permission: 'Notification' in window ? Notification.permission : 'default',
+      abonne: !!(OS && OS.User && OS.User.PushSubscription && OS.User.PushSubscription.optedIn), pret: !!OS, aller: aller };
+  }
+  function envoyerEtat() { if (sourceAppli) try { sourceAppli.postMessage(etat(), origineAppli); } catch (e) {} }
+  var fondNotif = document.getElementById('notif-fond');
+  document.getElementById('notif-non').onclick = function () { fondNotif.classList.remove('visible'); envoyerEtat(); };
+  document.getElementById('notif-ok').onclick = function () {
+    fondNotif.classList.remove('visible');
+    if (!OS) return envoyerEtat();
+    // Demandé dans le geste de l'utilisateur (obligatoire sur iPhone).
+    OS.Notifications.requestPermission().then(function () {
+      if (idMembre) OS.login(idMembre).catch(function () {});
+      if (OS.Notifications.permission) OS.User.PushSubscription.optIn().catch(function () {});
+      setTimeout(envoyerEtat, 1200);
+    }).catch(envoyerEtat);
+  };
+  // Messages de l'appli R2.0 (Google Apps Script, dans le cadre).
+  window.addEventListener('message', function (ev) {
+    var d = ev.data;
+    if (!d || typeof d.r2 !== 'string' || !/^https:\/\/([a-z0-9-]+\.)*(googleusercontent\.com|google\.com)$/.test(ev.origin)) return;
+    sourceAppli = ev.source; origineAppli = ev.origin;
+    if (d.id && /^r2[0-9a-f]{24}$/.test(d.id) && d.id !== idMembre) { idMembre = d.id; if (OS) OS.login(idMembre).catch(function () {}); }
+    if (d.r2 === 'ping') envoyerEtat();
+    else if (d.r2 === 'activer') fondNotif.classList.add('visible');
+    else if (d.r2 === 'couper') { if (OS) OS.User.PushSubscription.optOut().then(envoyerEtat).catch(envoyerEtat); else envoyerEtat(); }
+  });
 
   // Proposition d'installation (une fois), si l'appli n'est pas déjà ouverte depuis l'écran d'accueil.
   var autonome = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
