@@ -109,7 +109,7 @@
   <div class="bas" aria-label="by fdk"><span>by</span><svg viewBox="0 0 108 52" aria-hidden="true"><g fill="none" stroke="#fff" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 46V16a11 11 0 0 1 11-11h3M7 24h18"/><circle cx="46" cy="34" r="12"/><path d="M58 4V46"/><path d="M72 4V46M90 22L73 36M79 31L91 46"/></g><circle cx="101" cy="43" r="4.5" fill="#C6F432"/></svg></div>
 </div>
 <iframe id="appli" title="Application R2.0" allow="clipboard-write"
-  src="https://script.google.com/macros/s/AKfycbxEvrnogKnXWHxYHtcztRaZu5ga4IlNTbnybV5KPPo1Z6rC2u6Ea2Ju1DdtysB3hE3u/exec?k=e3016f812315463cb83e"></iframe>
+  data-src="https://script.google.com/macros/s/AKfycbxEvrnogKnXWHxYHtcztRaZu5ga4IlNTbnybV5KPPo1Z6rC2u6Ea2Ju1DdtysB3hE3u/exec?k=e3016f812315463cb83e"></iframe>
 <div id="installer" role="dialog" aria-live="polite"></div>
 <div id="notif-fond" role="dialog" aria-modal="true" aria-labelledby="notif-titre">
   <div id="notif-boite">
@@ -123,6 +123,9 @@
 <script>
   // Écran de démarrage le temps que l'appli charge.
   var appli = document.getElementById('appli'), accueil = document.getElementById('accueil');
+  // Ouverte depuis l'icône installée : on le signale à l'appli (compteur « Ont installé l'appli » de l'espace Éditeur).
+  var autonome0 = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  appli.src = appli.getAttribute('data-src') + (autonome0 ? '&app=1' : '');
   // Reste au moins 1,4 s (le temps de l'animation), puis disparaît dès que l'appli est chargée (8 s maximum).
   // L'écran de démarrage reste tant que l'appli n'est pas chargée (plus d'écran gris vide si Google est lent).
   // Après 15 s, un bouton « Réessayer » relance le chargement ; il revient si le nouvel essai traîne aussi.
