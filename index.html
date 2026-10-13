@@ -131,7 +131,7 @@
   // Après 15 s, un bouton « Réessayer » relance le chargement ; il revient si le nouvel essai traîne aussi.
   var debut = Date.now(), charge = false, minuteur = null, relance = document.getElementById('relance');
   function cacher() { charge = true; clearTimeout(minuteur); setTimeout(function () { accueil.classList.add('cache'); clearInterval(tour); }, Math.max(0, 1400 - (Date.now() - debut))); }
-  function surveiller() { clearTimeout(minuteur); minuteur = setTimeout(function () { if (!charge) relance.classList.add('ok'); }, 15000); }
+  function surveiller() { clearTimeout(minuteur); minuteur = setTimeout(function () { if (charge) return; phrases.push('Encore quelques secondes, ton espace arrive…'); minuteur = setTimeout(function () { if (!charge) relance.classList.add('ok'); }, 30000); }, 30000); }
   appli.addEventListener('load', cacher);
   relance.querySelector('button').onclick = function () { relance.classList.remove('ok'); charge = false; appli.src = appli.src; surveiller(); };
   surveiller();
